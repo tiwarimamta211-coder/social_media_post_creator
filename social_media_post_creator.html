@@ -1,0 +1,382 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); }
+  .app { display: grid; grid-template-columns: 260px 1fr 220px; height: 600px; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; background: var(--color-background-secondary); }
+  .panel { background: var(--color-background-primary); border-right: 0.5px solid var(--color-border-tertiary); display: flex; flex-direction: column; overflow: hidden; }
+  .panel-title { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.08em; padding: 14px 16px 10px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .panel-section { padding: 12px 16px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .section-label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 8px; }
+  .canvas-area { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--color-background-tertiary); position: relative; gap: 0; }
+  .canvas-wrap { position: relative; display: flex; align-items: center; justify-content: center; flex: 1; width: 100%; padding: 24px; }
+  .canvas { background: #fff; position: relative; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.10); border-radius: 4px; cursor: crosshair; transition: width 0.35s cubic-bezier(.4,0,.2,1), height 0.35s cubic-bezier(.4,0,.2,1); }
+  .canvas-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+  .canvas-overlay { position: absolute; inset: 0; pointer-events: none; }
+  .canvas-text-el { position: absolute; cursor: move; user-select: none; padding: 4px 8px; border-radius: 3px; }
+  .canvas-text-el.selected { outline: 2px solid #378ADD; }
+  .aspect-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .aspect-btn { flex: 1; padding: 7px 6px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); cursor: pointer; background: var(--color-background-primary); color: var(--color-text-primary); text-align: center; transition: all 0.15s; white-space: nowrap; }
+  .aspect-btn:hover { background: var(--color-background-secondary); }
+  .aspect-btn.active { background: #185FA5; color: #fff; border-color: #185FA5; }
+  .drop-zone { border: 1.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 16px 10px; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: #378ADD; background: #E6F1FB; }
+  .drop-zone p { font-size: 12px; color: var(--color-text-secondary); margin-top: 4px; }
+  .drop-icon { font-size: 20px; line-height: 1; }
+  .font-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .font-btn { padding: 8px 6px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); cursor: pointer; background: var(--color-background-primary); text-align: center; font-size: 13px; transition: all 0.15s; }
+  .font-btn:hover { background: var(--color-background-secondary); }
+  .font-btn.active { border-color: #185FA5; background: #E6F1FB; color: #185FA5; }
+  .right-panel { background: var(--color-background-primary); display: flex; flex-direction: column; overflow-y: auto; border-left: 0.5px solid var(--color-border-tertiary); }
+  .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 12px 16px; }
+  .filter-thumb { border-radius: var(--border-radius-md); overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s; aspect-ratio: 1; position: relative; }
+  .filter-thumb.active { border-color: #378ADD; }
+  .filter-thumb canvas { width: 100%; height: 100%; display: block; }
+  .filter-label { font-size: 10px; color: var(--color-text-secondary); text-align: center; margin-top: 3px; }
+  .text-controls { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .text-input { width: 100%; padding: 7px 10px; font-size: 13px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: var(--color-background-secondary); color: var(--color-text-primary); font-family: var(--font-sans); }
+  .text-input:focus { outline: none; border-color: #378ADD; }
+  .color-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .color-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s; flex-shrink: 0; }
+  .color-swatch.active { border-color: #378ADD; }
+  .size-row { display: flex; gap: 6px; align-items: center; }
+  .size-row input[type=range] { flex: 1; }
+  .size-val { font-size: 12px; color: var(--color-text-secondary); min-width: 28px; text-align: right; }
+  .add-text-btn { margin: 10px 16px; padding: 8px; font-size: 13px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); cursor: pointer; background: var(--color-background-secondary); color: var(--color-text-primary); transition: all 0.15s; }
+  .add-text-btn:hover { background: var(--color-background-tertiary); }
+  .export-btn { margin: 10px 16px 16px; padding: 9px; font-size: 13px; font-weight: 500; border: none; border-radius: var(--border-radius-md); cursor: pointer; background: #185FA5; color: #fff; transition: background 0.15s; }
+  .export-btn:hover { background: #0C447C; }
+  .toolbar { display: flex; gap: 8px; padding: 10px 16px; border-top: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary); justify-content: center; }
+  .tool-btn { padding: 6px 12px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); cursor: pointer; background: var(--color-background-primary); color: var(--color-text-primary); transition: all 0.15s; }
+  .tool-btn:hover { background: var(--color-background-secondary); }
+  .canvas-dim { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .scroll-inner { overflow-y: auto; flex: 1; }
+  .img-preview { width: 100%; height: 70px; object-fit: cover; border-radius: 6px; margin-top: 8px; }
+  .no-img-placeholder { width: 100%; height: 200px; background: linear-gradient(135deg, #E6F1FB 0%, #EEEDFE 100%); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #888; position: absolute; inset: 0; }
+  .bg-picker { display: flex; gap: 6px; flex-wrap: wrap; }
+  .bg-swatch { width: 26px; height: 26px; border-radius: 4px; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s; }
+  .bg-swatch.active { border-color: #185FA5; }
+</style>
+
+<h2 class="sr-only">Social Media Post Creator with aspect ratio presets, drag-and-drop image upload, font library, and filter presets</h2>
+
+<div class="app">
+  <div class="panel" style="border-right:0.5px solid var(--color-border-tertiary);">
+    <div class="panel-title">Canvas Setup</div>
+    <div class="scroll-inner">
+      <div class="panel-section">
+        <div class="section-label">Aspect Ratio</div>
+        <div class="aspect-btns">
+          <div class="aspect-btn active" data-w="400" data-h="400" onclick="setAspect(this)">Square<br><span style="font-size:10px;opacity:.7">1:1</span></div>
+          <div class="aspect-btn" data-w="270" data-h="480" onclick="setAspect(this)">Story<br><span style="font-size:10px;opacity:.7">9:16</span></div>
+          <div class="aspect-btn" data-w="480" data-h="252" onclick="setAspect(this)">Banner<br><span style="font-size:10px;opacity:.7">1.91:1</span></div>
+          <div class="aspect-btn" data-w="400" data-h="300" onclick="setAspect(this)">Landscape<br><span style="font-size:10px;opacity:.7">4:3</span></div>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="section-label">Background</div>
+        <div class="bg-picker" id="bgPicker">
+          <div class="bg-swatch active" style="background:#fff" data-bg="#fff" onclick="setBg(this)"></div>
+          <div class="bg-swatch" style="background:#000" data-bg="#000" onclick="setBg(this)"></div>
+          <div class="bg-swatch" style="background:linear-gradient(135deg,#E6F1FB,#EEEDFE)" data-bg="linear-gradient(135deg,#E6F1FB,#EEEDFE)" onclick="setBg(this)"></div>
+          <div class="bg-swatch" style="background:linear-gradient(135deg,#E1F5EE,#EEEDFE)" data-bg="linear-gradient(135deg,#E1F5EE,#EEEDFE)" onclick="setBg(this)"></div>
+          <div class="bg-swatch" style="background:linear-gradient(135deg,#FAEEDA,#FAECE7)" data-bg="linear-gradient(135deg,#FAEEDA,#FAECE7)" onclick="setBg(this)"></div>
+          <div class="bg-swatch" style="background:linear-gradient(135deg,#378ADD,#533AB7)" data-bg="linear-gradient(135deg,#378ADD,#533AB7)" onclick="setBg(this)"></div>
+          <div class="bg-swatch" style="background:linear-gradient(135deg,#D85A30,#993556)" data-bg="linear-gradient(135deg,#D85A30,#993556)" onclick="setBg(this)"></div>
+          <div class="bg-swatch" style="background:linear-gradient(135deg,#1D9E75,#185FA5)" data-bg="linear-gradient(135deg,#1D9E75,#185FA5)" onclick="setBg(this)"></div>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="section-label">Image Upload</div>
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('imgInput').click()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+          <div class="drop-icon">+</div>
+          <p>Drag & drop or click to upload</p>
+          <input type="file" id="imgInput" accept="image/*" style="display:none" onchange="onFileChange(event)">
+        </div>
+        <img id="imgPreview" class="img-preview" style="display:none">
+        <div style="display:flex;gap:6px;margin-top:8px;" id="imgControls" style="display:none">
+          <button class="tool-btn" onclick="removeImg()" style="flex:1;font-size:11px;">Remove image</button>
+        </div>
+      </div>
+      <div class="panel-section">
+        <div class="section-label">Font Library</div>
+        <div class="font-grid" id="fontGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="canvas-area">
+    <div class="canvas-wrap">
+      <div>
+        <div class="canvas-dim" id="canvasDim">400 × 400 px</div>
+        <div class="canvas" id="canvas" style="width:400px;height:400px;"
+          ondragover="onCanvasDragOver(event)" ondrop="onCanvasDrop(event)">
+          <div class="no-img-placeholder" id="canvasPlaceholder">Drop image or pick a background</div>
+          <img class="canvas-img" id="canvasImg" style="display:none;filter:none;">
+        </div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="tool-btn" onclick="clearTexts()">Clear text</button>
+      <button class="tool-btn" onclick="removeSelected()">Delete selected</button>
+      <button class="tool-btn" onclick="sendPrompt('I\'m using the social media post creator. Can you suggest engaging caption text for an Instagram post about travel?')">Caption ideas ↗</button>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="panel-title" style="padding:14px 16px 10px;">Text</div>
+    <div class="text-controls">
+      <input class="text-input" id="textInput" type="text" placeholder="Enter text..." value="Your Caption Here">
+      <div class="section-label" style="margin-bottom:2px;">Color</div>
+      <div class="color-row" id="textColors"></div>
+      <div class="section-label" style="margin-top:4px;margin-bottom:2px;">Size</div>
+      <div class="size-row">
+        <input type="range" min="10" max="72" value="28" id="fontSizeSlider" oninput="document.getElementById('fontSizeVal').textContent=this.value+'px'">
+        <span class="size-val" id="fontSizeVal">28px</span>
+      </div>
+    </div>
+    <button class="add-text-btn" onclick="addText()">+ Add text to canvas</button>
+    <div class="panel-title" style="padding:14px 16px 10px;border-top:0.5px solid var(--color-border-tertiary);">Filters</div>
+    <div class="filter-grid" id="filterGrid"></div>
+    <button class="export-btn" onclick="exportPost()">Export post</button>
+  </div>
+</div>
+
+<script>
+const fonts = [
+  {name:'Playfair',css:'Georgia, serif',label:'Playfair'},
+  {name:'Mono',css:'monospace',label:'Mono'},
+  {name:'Sans',css:'Arial, sans-serif',label:'Sans'},
+  {name:'Serif',css:'Times New Roman, serif',label:'Serif'},
+  {name:'Rounded',css:'Verdana, sans-serif',label:'Rounded'},
+  {name:'Bold',css:'Impact, sans-serif',label:'Bold'},
+];
+const filters = [
+  {name:'None',css:'none'},
+  {name:'Vivid',css:'saturate(1.8) contrast(1.1)'},
+  {name:'Fade',css:'brightness(1.1) saturate(0.7) contrast(0.9)'},
+  {name:'Noir',css:'grayscale(1) contrast(1.2)'},
+  {name:'Warm',css:'sepia(0.4) saturate(1.4) brightness(1.05)'},
+  {name:'Cool',css:'hue-rotate(30deg) saturate(1.2) brightness(1.05)'},
+  {name:'Dreamy',css:'brightness(1.1) contrast(0.85) saturate(1.3) blur(0.3px)'},
+  {name:'Punch',css:'contrast(1.4) saturate(1.5)'},
+];
+const textColors = ['#ffffff','#000000','#378ADD','#D85A30','#1D9E75','#7F77DD','#EF9F27','#E24B4A'];
+let selectedFont = fonts[0];
+let selectedFilter = 0;
+let selectedColor = '#ffffff';
+let textEls = [];
+let selectedEl = null;
+let dragOffX = 0, dragOffY = 0;
+let imgSrc = null;
+let canvasW = 400, canvasH = 400;
+
+function buildFontGrid() {
+  const g = document.getElementById('fontGrid');
+  g.innerHTML = '';
+  fonts.forEach((f,i) => {
+    const b = document.createElement('div');
+    b.className = 'font-btn' + (i===0?' active':'');
+    b.style.fontFamily = f.css;
+    b.textContent = f.label;
+    b.onclick = () => {
+      selectedFont = f;
+      g.querySelectorAll('.font-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+    };
+    g.appendChild(b);
+  });
+}
+
+function buildColorRow() {
+  const r = document.getElementById('textColors');
+  r.innerHTML = '';
+  textColors.forEach((c,i) => {
+    const s = document.createElement('div');
+    s.className = 'color-swatch' + (i===0?' active':'');
+    s.style.background = c;
+    s.style.border = c==='#ffffff' ? '2px solid #ccc' : '2px solid transparent';
+    s.onclick = () => {
+      selectedColor = c;
+      r.querySelectorAll('.color-swatch').forEach(x=>x.classList.remove('active'));
+      s.classList.add('active');
+      if(selectedEl) selectedEl.style.color = c;
+    };
+    r.appendChild(s);
+  });
+}
+
+function buildFilterGrid() {
+  const g = document.getElementById('filterGrid');
+  g.innerHTML = '';
+  filters.forEach((f,i) => {
+    const wrap = document.createElement('div');
+    const thumb = document.createElement('div');
+    thumb.className = 'filter-thumb' + (i===0?' active':'');
+    const c = document.createElement('canvas');
+    c.width = 80; c.height = 80;
+    const ctx = c.getContext('2d');
+    const grad = ctx.createLinearGradient(0,0,80,80);
+    grad.addColorStop(0,'#B5D4F4');
+    grad.addColorStop(0.5,'#EEEDFE');
+    grad.addColorStop(1,'#9FE1CB');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,80,80);
+    ctx.fillStyle = '#185FA5';
+    ctx.font = 'bold 18px Arial';
+    ctx.fillText('Aa',22,48);
+    thumb.style.filter = f.css;
+    thumb.appendChild(c);
+    thumb.onclick = () => {
+      selectedFilter = i;
+      g.querySelectorAll('.filter-thumb').forEach(x=>x.classList.remove('active'));
+      thumb.classList.add('active');
+      document.getElementById('canvasImg').style.filter = f.css;
+    };
+    const label = document.createElement('div');
+    label.className = 'filter-label';
+    label.textContent = f.name;
+    wrap.appendChild(thumb);
+    wrap.appendChild(label);
+    g.appendChild(wrap);
+  });
+}
+
+function setAspect(btn) {
+  document.querySelectorAll('.aspect-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  canvasW = parseInt(btn.dataset.w);
+  canvasH = parseInt(btn.dataset.h);
+  const c = document.getElementById('canvas');
+  c.style.width = canvasW + 'px';
+  c.style.height = canvasH + 'px';
+  document.getElementById('canvasDim').textContent = canvasW + ' × ' + canvasH + ' px';
+}
+
+function setBg(el) {
+  document.querySelectorAll('.bg-swatch').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('canvas').style.background = el.dataset.bg;
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.add('drag-over');
+}
+function onDragLeave(e) {
+  document.getElementById('dropZone').classList.remove('drag-over');
+}
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if(file && file.type.startsWith('image/')) loadImg(file);
+}
+function onFileChange(e) {
+  const file = e.target.files[0];
+  if(file) loadImg(file);
+}
+function loadImg(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    imgSrc = ev.target.result;
+    const img = document.getElementById('canvasImg');
+    img.src = imgSrc;
+    img.style.display = 'block';
+    img.style.filter = filters[selectedFilter].css;
+    document.getElementById('canvasPlaceholder').style.display = 'none';
+    document.getElementById('imgPreview').src = imgSrc;
+    document.getElementById('imgPreview').style.display = 'block';
+    document.getElementById('imgControls').style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+}
+function removeImg() {
+  imgSrc = null;
+  document.getElementById('canvasImg').style.display = 'none';
+  document.getElementById('canvasImg').src = '';
+  document.getElementById('canvasPlaceholder').style.display = 'flex';
+  document.getElementById('imgPreview').style.display = 'none';
+  document.getElementById('imgControls').style.display = 'none';
+}
+function onCanvasDragOver(e) { e.preventDefault(); }
+function onCanvasDrop(e) {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if(file && file.type.startsWith('image/')) loadImg(file);
+}
+
+function addText() {
+  const text = document.getElementById('textInput').value || 'Text';
+  const size = document.getElementById('fontSizeSlider').value;
+  const canvas = document.getElementById('canvas');
+  const el = document.createElement('div');
+  el.className = 'canvas-text-el';
+  el.contentEditable = true;
+  el.textContent = text;
+  el.style.fontFamily = selectedFont.css;
+  el.style.fontSize = size + 'px';
+  el.style.color = selectedColor;
+  el.style.fontWeight = selectedFont.name==='Bold'?'bold':'normal';
+  el.style.left = Math.floor(canvasW/2 - 60) + 'px';
+  el.style.top = Math.floor(canvasH/2 - parseInt(size)/2) + 'px';
+  el.style.textShadow = selectedColor==='#ffffff'?'0 1px 4px rgba(0,0,0,0.4)':'none';
+  makeDraggable(el);
+  el.onclick = () => selectEl(el);
+  canvas.appendChild(el);
+  textEls.push(el);
+  selectEl(el);
+}
+
+function makeDraggable(el) {
+  el.onmousedown = e => {
+    if(e.target.isContentEditable && e.detail>1) return;
+    selectEl(el);
+    const rect = el.getBoundingClientRect();
+    dragOffX = e.clientX - rect.left;
+    dragOffY = e.clientY - rect.top;
+    const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+    function move(e2) {
+      let x = e2.clientX - canvasRect.left - dragOffX;
+      let y = e2.clientY - canvasRect.top - dragOffY;
+      x = Math.max(0, Math.min(canvasW - el.offsetWidth, x));
+      y = Math.max(0, Math.min(canvasH - el.offsetHeight, y));
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+    }
+    function up() {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+    }
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    e.preventDefault();
+  };
+}
+
+function selectEl(el) {
+  if(selectedEl) selectedEl.classList.remove('selected');
+  selectedEl = el;
+  el.classList.add('selected');
+}
+
+function removeSelected() {
+  if(!selectedEl) return;
+  selectedEl.remove();
+  textEls = textEls.filter(e=>e!==selectedEl);
+  selectedEl = null;
+}
+
+function clearTexts() {
+  textEls.forEach(e=>e.remove());
+  textEls = [];
+  selectedEl = null;
+}
+
+function exportPost() {
+  sendPrompt('I finished designing my social media post in the creator. It\'s a ' + (document.querySelector('.aspect-btn.active').textContent.trim().split('\n')[0]) + ' format. Can you give me tips on best posting times and caption hashtags to maximize engagement?');
+}
+
+buildFontGrid();
+buildColorRow();
+buildFilterGrid();
+</script>
